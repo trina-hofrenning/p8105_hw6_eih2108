@@ -1,0 +1,29 @@
+---
+title: "p8105_hw6_eih2108"
+author: "Ekaterina Hofrenning"
+date: '2023-11-27'
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(rnoaa)
+```
+
+
+# Problem 2
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2022-01-01",
+    date_max = "2022-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
