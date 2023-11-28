@@ -8,6 +8,10 @@ output: github_document
 ```{r, message = F, warning = F, echo=FALSE}
 library(tidyverse)
 library(rnoaa)
+library(janitor)
+library(MASS)
+library(modelr)
+set.seed(254)
 ```
 
 
@@ -15,7 +19,7 @@ library(rnoaa)
 
 The boostrap is helpful when you’d like to perform inference for a parameter / value / summary that doesn’t have an easy-to-write-down distribution in the usual repeated sampling framework. We’ll focus on a simple linear regression with tmax as the response with tmin and prcp as the predictors, and are interested in the distribution of two quantities estimated from these data:
 
-- r^ 2
+- r^2
 - log(b1*b2)
 
 Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of these two quantities. Plot the distribution of your estimates, and describe these in words. Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r^2 and log(b1*b2).
@@ -96,6 +100,77 @@ log_b1b2_CI
 
 The distribution of the 5000 **log(b1*b2)** values has a large left skew. It's peak is around -5. When we take the log of negative values, NAs are produced. In this case, `r log_b1b2_CI$NA_num` NAs were produced. Of those that are non-NA, the confidence interval for **log(b1*b2)** is between: `r log_b1b2_CI$ci_lower` and `r log_b1b2_CI$ci_upper`.
 
+
+# Problem 3
+
+Load and clean the data for regression analysis (i.e. convert numeric to factor where appropriate, check for missing data, etc.).
+
+```{r, message = F}
+bw <- read_csv("data/birthweight.csv") %>%
+  janitor::clean_names() %>%
+  mutate(
+    babysex = as.factor(babysex),
+    babysex = fct_recode(babysex, "male" = "1", "female" = "2"),
+    frace = as.factor(frace),
+    frace = fct_recode(frace, 
+                       "white" = "1", "black" = "2", "asian" = "3", 
+                       "puerto rican" = "4", "other" = "8"),
+    malform = as.logical(malform),
+    mrace = as.factor(mrace),
+    mrace = fct_recode(mrace, "white" = "1", "black" = "2", 
+                       "asian" = "3", "puerto rican" = "4")) %>%
+  drop_na()
+```
+
+
+Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot.
+
+In order to choose model features, I will use a backward stepwise selection algorithm from the MASS package. This uses the Aikake's Information Criteria (AIC) measure to kick out predictors one by one in order to find the most parsimonious model.
+
+```{r}
+lm1 <- lm(bwt ~., data = bw)
+step <- stepAIC(lm1, direction = "backward", trace = FALSE)
+
+```
+
+Compare your model to two others:
+
+- One using length at birth and gestational age as predictors (main effects only)
+- One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
+
+Make this comparison in terms of the cross-validated prediction error; use crossv_mc and functions in purrr as appropriate.
+
+```{r}
+# Comparison model 2
+lm2 <- lm(bwt ~ blength + gaweeks, data = bw)
+summary(lm2)
+lm2 %>% broom::tidy()
+
+# Comparison model 3
+lm3 <- lm(bwt ~ bhead*blength*babysex, data = bw)
+summary(lm3)
+lm3 %>% broom::tidy()
+```
+
+
+```{r}
+cv_df = crossv_mc(bw, 100) 
+
+# cv_df = 
+#   cv_df |> 
+#   mutate(
+#     fit1  = map(train, \(df) lm(bwt ~ babysex + bhead + blength + delwt + fincome + 
+#     gaweeks + mheight + mrace + parity + ppwt + smoken, data = df)),
+#     fit2  = map(train, \(df) lm(bwt ~ blength + gaweeks, data = df)), 
+#     fit3  = map(train, \(df) lm(bwt ~ bhead*blength*babysex, data = df))) |>
+#   mutate(
+#     rmse1 = map2_dbl(fit1, test, \(mod, df) rmse(model = mod, data = df)),
+#     rmse2 = map2_dbl(fit2, test, \(mod, df) rmse(model = mod, data = df)),
+#     rmse3 = map2_dbl(fit3, test, \(mod, df) rmse(model = mod, data = df)))
+```
+
+
+Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
 
 
 
