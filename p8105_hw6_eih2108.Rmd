@@ -1,8 +1,8 @@
 ---
-title: "p8105_hw6_eih2108"
+title: "Homework 6"
 author: "Ekaterina Hofrenning"
 date: '2023-11-27'
-output: html_document
+output: github_document
 ---
 
 ```{r, message = F, warning = F, echo=FALSE}
@@ -21,7 +21,7 @@ The boostrap is helpful when you’d like to perform inference for a parameter /
 Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of these two quantities. Plot the distribution of your estimates, and describe these in words. Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r^2 and log(b1*b2).
 
 
-```{r}
+```{r, message = F, warning = F}
 # read data
 weather_df = 
   rnoaa::meteo_pull_monitors(
@@ -36,7 +36,7 @@ weather_df =
   select(name, id, everything())
 ```
 
-```{r}
+```{r, message = F, warning = F}
 # run the bootstraps
 bootstrap_df =
   weather_df %>%
@@ -50,7 +50,7 @@ bootstrap_df =
   select(term, estimate, r.squared) 
 ```
 
-```{r}
+```{r, message = F, warning=F}
 # R^2 plot
 bootstrap_df %>%
   filter(term == "(Intercept)") %>%
@@ -95,9 +95,6 @@ log_b1b2_CI
 ```
 
 The distribution of the 5000 **log(b1*b2)** values has a large left skew. It's peak is around -5. When we take the log of negative values, NAs are produced. In this case, `r log_b1b2_CI$NA_num` NAs were produced. Of those that are non-NA, the confidence interval for **log(b1*b2)** is between: `r log_b1b2_CI$ci_lower` and `r log_b1b2_CI$ci_upper`.
-
-
-- can't take log of negative numbers (log b1 b2). Report how many were NAs. Then say "Of the non-NAs, the 95 and 25 CI were __". 
 
 
 
