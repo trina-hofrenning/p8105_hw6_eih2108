@@ -40,7 +40,7 @@ weather_df =
 # run the bootstraps
 bootstrap_df =
   weather_df %>%
-  modelr::bootstrap(n = 100) %>%
+  modelr::bootstrap(n = 5000) %>%
   mutate(
     models = map(strap, \(df) lm(tmax ~ tmin + prcp, data = df)),
     results = map(models, broom::tidy),
@@ -51,16 +51,24 @@ bootstrap_df =
 ```
 
 ```{r}
-# make R^2 plot
+# R^2 plot
 bootstrap_df %>%
   filter(term == "(Intercept)") %>%
   ggplot(aes(x = r.squared)) +
   geom_density()
+
+# CI for R^2
+r2_CI <-
+  bootstrap_df %>%
+  filter(term == "(Intercept)") %>%
+  select(r.squared) %>%
+  summarize(ci_lower = quantile(r.squared, 0.025), 
+            ci_upper = quantile(r.squared, 0.975))
 ```
 
 The distribution of r-squared values has a left skew and is centered near .92.
 
-```{r}
+```{r, warning = F, message = F}
 # plot log(b1*b2)
 bootstrap_df %>%
   pivot_wider(names_from = term, values_from = estimate) %>% 
@@ -69,23 +77,6 @@ bootstrap_df %>%
   mutate(log_b1_b2 = log(beta_1 * beta_2)) %>% 
   ggplot(aes(x = log_b1_b2)) + 
   geom_density()
-```
-
-The distribution of log(b0*b1) values has a right skew and a bit of a shoulder. !!!!!
-
-
-- can't take log of negative numbers (log b1 b2). Report how many were NAs. Then say "Of the non-NAs, the 95 and 25 CI were __". 
-
-*Confidence intervals:*
-
-```{r}
-# CI for R^2
-r2_CI <-
-  bootstrap_df %>%
-  filter(term == "(Intercept)") %>%
-  select(r.squared) %>%
-  summarize(ci_lower = quantile(r.squared, 0.025), 
-            ci_upper = quantile(r.squared, 0.975))
 
 # CI for log(b1*b2)
 log_b1b2_CI <-
@@ -99,8 +90,10 @@ bootstrap_df %>%
             ci_upper = quantile(log_b1_b2, 0.975, na.rm = T))
 ```
 
+The distribution of log(b0*b1) values has a right skew and a bit of a shoulder. !!!!!
 
 
+- can't take log of negative numbers (log b1 b2). Report how many were NAs. Then say "Of the non-NAs, the 95 and 25 CI were __". 
 
 
 
