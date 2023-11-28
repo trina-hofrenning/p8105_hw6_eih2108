@@ -64,9 +64,11 @@ r2_CI <-
   select(r.squared) %>%
   summarize(ci_lower = quantile(r.squared, 0.025), 
             ci_upper = quantile(r.squared, 0.975))
+
+r2_CI
 ```
 
-The distribution of r-squared values has a left skew and is centered near .92.
+The distribution of the 5000 R-squared values has a slight left skew and is centered near .92. The 95% confidence interval of the R-squared values is between: `r r2_CI$ci_lower` and `r r2_CI$ci_upper`.
 
 ```{r, warning = F, message = F}
 # plot log(b1*b2)
@@ -88,9 +90,11 @@ bootstrap_df %>%
   summarize(NA_num = sum(is.na(log_b1_b2)),
             ci_lower = quantile(log_b1_b2, 0.025, na.rm = T), 
             ci_upper = quantile(log_b1_b2, 0.975, na.rm = T))
+
+log_b1b2_CI
 ```
 
-The distribution of log(b0*b1) values has a right skew and a bit of a shoulder. !!!!!
+The distribution of the 5000 **log(b1*b2)** values has a large left skew. It's peak is around -5. When we take the log of negative values, NAs are produced. In this case, `r log_b1b2_CI$NA_num` NAs were produced. Of those that are non-NA, the confidence interval for **log(b1*b2)** is between: `r log_b1b2_CI$ci_lower` and `r log_b1b2_CI$ci_upper`.
 
 
 - can't take log of negative numbers (log b1 b2). Report how many were NAs. Then say "Of the non-NAs, the 95 and 25 CI were __". 
