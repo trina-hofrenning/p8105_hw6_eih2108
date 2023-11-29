@@ -140,6 +140,9 @@ Compare your model to two others:
 
 Make this comparison in terms of the cross-validated prediction error; use crossv_mc and functions in purrr as appropriate.
 
+
+Initialize Comparison Models:
+
 ```{r}
 # Comparison model (2)
 lm2 <- lm(bwt ~ blength + gaweeks, data = bw)
@@ -152,40 +155,30 @@ summary(lm3)
 lm3 %>% broom::tidy()
 ```
 
+CV Prediction Error:
 
 ```{r}
-# cv_df = crossv_mc(bw, 100) 
+cv_df = 
+  crossv_mc(bw, 100) %>% 
+  mutate(
+    train = map(train, as_tibble), 
+    test = map(test, as_tibble))
 
-cv_df <-
-  bw %>%
-  crossv_mc(100) %>%
+cv_df %>% 
   mutate(
-    fit1  = map(train, \(df) lm(bwt ~ babysex + bhead + blength + delwt + fincome +
-    gaweeks + mheight + mrace + parity + ppwt + smoken, data = df)),
-    fit2  = map(train, \(df) lm(bwt ~ blength + gaweeks, data = df)),
-    fit3  = map(train, \(df) lm(bwt ~ bhead*blength*babysex, data = df))) %>%
+    mod_mine  = map(train, ~lm(bwt ~ babysex + bhead + blength + delwt + fincome + 
+    gaweeks + mheight + mrace + parity + ppwt + smoken, data = .x)),
+    mod2  = map(train, ~lm(bwt ~ gaweeks + blength, data = .x)),
+    mod3  = map(train, ~lm(bwt ~ bhead*blength*babysex, data = .x))) %>% 
   mutate(
-    rmse1 = map2_dbl(fit1, test, \(mod, df) rmse(model = mod, data = df)),
-    rmse2 = map2_dbl(fit2, test, \(mod, df) rmse(model = mod, data = df)),
-    rmse3 = map2_dbl(fit3, test, \(mod, df) rmse(model = mod, data = df)))
+    rmse_mine = map2_dbl(mod_mine, test, ~rmse(model = .x, data = .y)),
+    rmse_2  = map2_dbl(mod2, test, ~rmse(model = .x, data = .y)),
+    rmse_3 = map2_dbl(mod3, test, ~rmse(model = .x, data = .y))) %>% 
+  summarize(
+    avg_rmse_mod_mine = mean(rmse_mine),
+    avg_rmse_mod2 = mean(rmse_2),
+    avg_rmse_mod3 = mean(rmse_3))
 ```
 
-```{r}
-# df_cv %>%
-#   select(starts_with("rmse")) %>%
-#   pivot_longer(everything(),
-#                names_to = "model",
-#                values_to = "rmse",
-#                names_prefix = "rmse_") %>%
-#   mutate(model = fct_reorder(model, rmse)) %>%
-#   ggplot(aes(x = model, y = rmse)) +
-#   geom_boxplot() +
-#   labs(title = "RMSE Comparison",
-#        x = "Model",
-#        y = "RMSE")
-```
-
-Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
-
-
+The average RMSE is lowest for my model compared to the 2 models defined above.
 
