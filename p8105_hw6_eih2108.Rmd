@@ -131,6 +131,7 @@ In order to choose model features, I will use a backward stepwise selection algo
 # My model (1)
 lm1 <- lm(bwt ~., data = bw)
 step <- stepAIC(lm1, direction = "backward", trace = FALSE)
+step %>% broom::tidy() %>% knitr::kable()
 ```
 
 Compare your model to two others:
@@ -146,24 +147,23 @@ Initialize Comparison Models:
 ```{r}
 # Comparison model (2)
 lm2 <- lm(bwt ~ blength + gaweeks, data = bw)
-summary(lm2)
-lm2 %>% broom::tidy()
+lm2 %>% broom::tidy() %>% knitr::kable()
 
 # Comparison model (3)
 lm3 <- lm(bwt ~ bhead*blength*babysex, data = bw)
-summary(lm3)
-lm3 %>% broom::tidy()
+lm3 %>% broom::tidy() %>% knitr::kable()
 ```
 
 CV Prediction Error:
 
-```{r}
-cv_df = 
+```{r, warning = F, message = F}
+cv_df <-
   crossv_mc(bw, 100) %>% 
   mutate(
     train = map(train, as_tibble), 
     test = map(test, as_tibble))
 
+cv_comp <-
 cv_df %>% 
   mutate(
     mod_mine  = map(train, ~lm(bwt ~ babysex + bhead + blength + delwt + fincome + 
@@ -178,7 +178,9 @@ cv_df %>%
     avg_rmse_mod_mine = mean(rmse_mine),
     avg_rmse_mod2 = mean(rmse_2),
     avg_rmse_mod3 = mean(rmse_3))
+
+cv_comp
 ```
 
-The average RMSE is lowest for my model compared to the 2 models defined above.
+The average RMSE is lowest for my model (`r cv_comp %>% pull(avg_rmse_mod_mine)`)compared to the 2 models defined above, compared to `r cv_comp %>% pull(avg_rmse_mod2)` for the first comparison model and `r cv_comp %>% pull(avg_rmse_mod3)` for the second comparison model.
 
